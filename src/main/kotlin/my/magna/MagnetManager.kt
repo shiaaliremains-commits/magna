@@ -87,15 +87,20 @@ object MagnetManager {
             val rawItems = level.getEntitiesOfClass(ItemEntity::class.java, box)
             val items = ArrayList<ItemEntity>()
 
-            // تصفية وتصفير وقت المنع للبلوكات المكسورة
             for (i in 0 until rawItems.size) {
                 val item = rawItems[i]
-                if (item.isAlive) {
-                    if (item.hasPickUpDelay()) {
-                        item.setPickUpDelay(0)
-                    }
-                    items.add(item)
+                if (!item.isAlive) continue
+
+                // حماية رمي الأغراض: إذا رماه اللاعب بنفسه (بزر Q أو الحقيبة)، اتركه يسقط طبيعي بالأرض وما تسحبه
+                if (item.hasPickUpDelay() && item.owner == player) {
+                    continue
                 }
+
+                // البلوكات المكسورة بالتعدين: صفّر وقتها فوراً لتسحب بنفس اللحظة
+                if (item.hasPickUpDelay()) {
+                    item.setPickUpDelay(0)
+                }
+                items.add(item)
             }
 
             // دمج الحبات المتشابهة المتبعثرة في ستاك واحد
