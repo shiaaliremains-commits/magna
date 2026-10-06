@@ -12,12 +12,6 @@ import net.minecraft.world.entity.item.ItemEntity
 import net.minecraft.world.item.ItemStack
 import net.minecraft.world.phys.Vec3
 
-/**
- * Clean & Dynamic Visuals:
- * - No 3D boxes / cubes.
- * - Glowing cross-halo frame fitted tightly around the item silhouette.
- * - Vivid high-emissive neon colors that stay 100% visible in day and night!
- */
 object MagnaVisuals {
     private const val PERSIST = 55
     private const val XP_COLOR = 0x55FF55
@@ -26,7 +20,6 @@ object MagnaVisuals {
 
     private fun argb(alpha: Int, rgb: Int): Int = (alpha.coerceIn(0, 255) shl 24) or (rgb and 0xFFFFFF)
 
-    // ألوان نيون ساطعة ومميزة لكل نوع آيتم لتبقى واضحة في الشمس والعتمة
     private fun getItemColor(stack: ItemStack): Int {
         val name = stack.item.toString().lowercase()
         return when {
@@ -82,30 +75,22 @@ object MagnaVisuals {
         }
     }
 
-    // رسم هالة توهج ناعمة تلتف حول شكل الغرض بدلاً من الصندوق المربع
     private fun drawItemGlowFrame(tg: Target, range: Double, t: Long) {
         val e = tg.entity
         val closeness = (1.0 - tg.dist / range).coerceIn(0.0, 1.0)
         val rgb = tg.rgb
 
-        // مركز الغرض بدقة
         val center = e.position().add(0.0, 0.18, 0.0)
-
-        // نبض تنفسي خفيف في حجم وشفافية التوهج
         val pulse = 0.5 + 0.5 * sin((t / 200.0) + e.id)
         val radius = 0.22 + 0.04 * pulse
 
-        // شفافية ساطعة وواضحة جداً في ضوء النهار والعتمة
         val lineAlpha = (140 + 100 * closeness + 15 * pulse).toInt().coerceIn(0, 255)
         val color = argb(lineAlpha, rgb)
 
-        // 1. حلقة توهج أفقية ناعمة تحيط بخصر الآيتم
+        // هالة متقاطعة تعطي شكل توهج منحني وناعم يلتف حول الغرض
         drawCircle(center, radius, color, isHorizontal = true)
-
-        // 2. حلقة توهج عمودية متقاطعة تعطي شعور هالة ثلاثية الأبعاد بدون زوايا مربعة
         drawCircle(center, radius, color, isHorizontal = false)
 
-        // 3. لمعة متوهجة ناعمة وواضحة جداً في مركز الآيتم نفسه
         Gizmos.point(center, argb((180 + 75 * closeness).toInt(), rgb), (4.5 + 3.0 * closeness).toFloat())
             .apply { persistForMillis(PERSIST); setAlwaysOnTop() }
     }
