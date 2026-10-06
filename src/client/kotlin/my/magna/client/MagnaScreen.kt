@@ -43,7 +43,7 @@ class MagnaScreen(private val parent: Screen? = null) : Screen(Component.literal
 
     override fun onClose() {
         if (parent != null) {
-            minecraft?.setScreen(parent)
+            MagnaClient.openScreen(parent)
         } else {
             super.onClose()
         }
