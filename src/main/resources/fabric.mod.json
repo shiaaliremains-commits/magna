@@ -27,12 +27,6 @@
 				"adapter": "kotlin"
 			}
 		],
-		"modmenu": [
-			{
-				"value": "my.magna.client.MagnaModMenu",
-				"adapter": "kotlin"
-			}
-		],
 		"fabric-datagen": [
 			{
 				"value": "my.magna.client.MagnaDataGenerator",
