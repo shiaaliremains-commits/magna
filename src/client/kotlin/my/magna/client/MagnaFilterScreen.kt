@@ -61,11 +61,12 @@ class MagnaFilterScreen(private val parent: Screen) : Screen(Component.literal("
                 val id = BuiltInRegistries.ITEM.getKey(item).toString()
                 val checked = d.filterItems.contains(id)
 
-                val prefix = if (checked) Component.literal("[✔] ").withStyle(ChatFormatting.GREEN, ChatFormatting.BOLD)
+                // التحديد صار باليسار بصف الاسم مع لمسة جمالية ملونة
+                val boxSymbol = if (checked) Component.literal("[✔] ").withStyle(ChatFormatting.GREEN, ChatFormatting.BOLD)
                 else Component.literal("[  ] ").withStyle(ChatFormatting.DARK_GRAY)
 
                 val itemName = Component.translatable(item.descriptionId).withStyle(if (checked) ChatFormatting.WHITE else ChatFormatting.GRAY)
-                btn.message = Component.empty().append(prefix).append(itemName)
+                btn.message = Component.empty().append(boxSymbol).append(itemName)
                 btn.visible = true
             } else {
                 btn.visible = false
@@ -75,8 +76,11 @@ class MagnaFilterScreen(private val parent: Screen) : Screen(Component.literal("
         prevBtn.active = currentPage > 0
         nextBtn.active = currentPage < totalPages - 1
 
-        val modeText = if (d.filterWhitelist) "Mode: Whitelist" else "Mode: Blacklist"
-        modeBtn.message = Component.literal(modeText).withStyle(if (d.filterWhitelist) ChatFormatting.AQUA else ChatFormatting.RED)
+        val modeLabel = if (d.filterWhitelist) "WHITELIST" else "BLACKLIST"
+        val modeColor = if (d.filterWhitelist) ChatFormatting.AQUA else ChatFormatting.RED
+        modeBtn.message = Component.literal("● ").withStyle(modeColor, ChatFormatting.BOLD)
+            .append(Component.literal("Mode: ").withStyle(ChatFormatting.WHITE))
+            .append(Component.literal(modeLabel).withStyle(modeColor, ChatFormatting.BOLD))
     }
 
     private fun toggleItem(indexInPage: Int) {
@@ -100,26 +104,33 @@ class MagnaFilterScreen(private val parent: Screen) : Screen(Component.literal("
     }
 
     override fun init() {
-        val w = 280
+        val w = 310
         val left = width / 2 - w / 2
-        var y = 8
+        var y = 6
 
-        // شريط البحث
-        searchBox = EditBox(font, left, y, w, 18, Component.literal("Search items..."))
+        // عنوان فخم ومودرن
+        val titleBtn = Button.builder(
+            Component.literal("✦ MAGNA ITEM FILTER ✦").withStyle(ChatFormatting.GOLD, ChatFormatting.BOLD)
+        ) { _ -> }.bounds(left, y, w, 18).build()
+        titleBtn.active = false
+        addRenderableWidget(titleBtn)
+        y += 22
+
+        // شريط بحث عصري
+        searchBox = EditBox(font, left, y, w, 18, Component.literal("Search..."))
         searchBox.setResponder { updateFilter() }
         addRenderableWidget(searchBox)
         y += 22
 
-        // زر Whitelist / Blacklist
+        // أزرار التحكم السريعة (مود + أزرار مجمعة)
         modeBtn = Button.builder(Component.empty()) { _ ->
             d.filterWhitelist = !d.filterWhitelist
             saveAndSync()
             refreshPage()
-        }.bounds(left, y, 100, 18).build()
+        }.bounds(left, y, 110, 18).build()
         addRenderableWidget(modeBtn)
 
-        // أزرار سريعة
-        val oresBtn = Button.builder(Component.literal("Ores Only")) { _ ->
+        val oresBtn = Button.builder(Component.literal("★ Ores").withStyle(ChatFormatting.YELLOW)) { _ ->
             d.filterItems.clear()
             for (item in allItems) {
                 val id = BuiltInRegistries.ITEM.getKey(item).path.lowercase()
@@ -131,34 +142,34 @@ class MagnaFilterScreen(private val parent: Screen) : Screen(Component.literal("
             }
             saveAndSync()
             refreshPage()
-        }.bounds(left + 104, y, 60, 18).build()
+        }.bounds(left + 114, y, 62, 18).build()
         addRenderableWidget(oresBtn)
 
-        val selectAllBtn = Button.builder(Component.literal("Select All")) { _ ->
+        val selectAllBtn = Button.builder(Component.literal("All").withStyle(ChatFormatting.GREEN)) { _ ->
             for (item in filteredItems) {
                 d.filterItems.add(BuiltInRegistries.ITEM.getKey(item).toString())
             }
             saveAndSync()
             refreshPage()
-        }.bounds(left + 168, y, 54, 18).build()
+        }.bounds(left + 180, y, 62, 18).build()
         addRenderableWidget(selectAllBtn)
 
-        val clearAllBtn = Button.builder(Component.literal("Clear")) { _ ->
+        val clearAllBtn = Button.builder(Component.literal("Clear").withStyle(ChatFormatting.RED)) { _ ->
             d.filterItems.clear()
             saveAndSync()
             refreshPage()
-        }.bounds(left + 226, y, 54, 18).build()
+        }.bounds(left + 246, y, 64, 18).build()
         addRenderableWidget(clearAllBtn)
         y += 22
 
-        // شبكة العناصر (صفين كل صف 5 عناصر = 10 عناصر بالصفحة)
+        // شبكة العناصر (صفين، التحديد باليسار بصف الاسم بوضوح تام)
         itemButtons.clear()
-        val btnW = w / 2 - 2
+        val btnW = w / 2 - 3
         val startY = y
         for (i in 0 until pageSize) {
             val col = i % 2
             val row = i / 2
-            val bx = left + col * (btnW + 4)
+            val bx = left + col * (btnW + 6)
             val by = startY + row * 20
 
             val btn = Button.builder(Component.empty()) { _ -> toggleItem(i) }
@@ -168,22 +179,22 @@ class MagnaFilterScreen(private val parent: Screen) : Screen(Component.literal("
         }
         y = startY + 5 * 20 + 4
 
-        // أزرار التنقل بين الصفحات وزر العودة
-        prevBtn = Button.builder(Component.literal("< Prev")) { _ ->
+        // أزرار التنقل والرجوع بأسلوب كبسولات سفلية أنيقة
+        prevBtn = Button.builder(Component.literal("◀ Prev").withStyle(ChatFormatting.YELLOW)) { _ ->
             currentPage--
             refreshPage()
-        }.bounds(left, y, 60, 18).build()
+        }.bounds(left, y, 70, 18).build()
         addRenderableWidget(prevBtn)
 
-        nextBtn = Button.builder(Component.literal("Next >")) { _ ->
+        nextBtn = Button.builder(Component.literal("Next ▶").withStyle(ChatFormatting.YELLOW)) { _ ->
             currentPage++
             refreshPage()
-        }.bounds(left + 64, y, 60, 18).build()
+        }.bounds(left + 74, y, 70, 18).build()
         addRenderableWidget(nextBtn)
 
-        val backBtn = Button.builder(Component.literal("Back")) { _ ->
+        val backBtn = Button.builder(Component.literal("✔ Done").withStyle(ChatFormatting.AQUA, ChatFormatting.BOLD)) { _ ->
             MagnaClient.openScreen(parent)
-        }.bounds(left + w - 70, y, 70, 18).build()
+        }.bounds(left + w - 80, y, 80, 18).build()
         addRenderableWidget(backBtn)
 
         updateFilter()
