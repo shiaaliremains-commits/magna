@@ -80,10 +80,9 @@ object MagnetManager {
         }
     }
 
-    // فحص ما إذا كان البلوك مسموح بسحبه حسب فلتر اللاعب
     private fun isItemAllowed(item: ItemEntity, s: Pull): Boolean {
         if (s.filter.isEmpty()) {
-            return !s.whitelist // إذا القائمة فارغة والوضع Whitelist لا يسحب شيء، وإذا Blacklist يسحب كل شيء
+            return !s.whitelist
         }
         val id = BuiltInRegistries.ITEM.getKey(item.item.item).toString()
         val contains = s.filter.contains(id)
@@ -93,7 +92,8 @@ object MagnetManager {
     private fun attract(player: ServerPlayer, s: Pull) {
         val level = player.level() as? ServerLevel ?: return
         val range = s.range.toDouble()
-        val target = player.eyePosition.subtract(0.0, 0.4, 0.0)
+        // السحب مباشرة للأقدام (مكان التقاط ماينكرافت الطبيعي)
+        val target = player.position().add(0.0, 0.1, 0.0)
         val box = player.boundingBox.inflate(range)
         val mult = PullSpeed.entries[s.speed].mult
         val targets = Targets.entries[s.targets]
@@ -106,10 +106,7 @@ object MagnetManager {
                 val item = rawItems[i]
                 if (!item.isAlive) continue
 
-                // استثناء ما رماه اللاعب بيده
                 if (item.hasPickUpDelay() && item.owner == player) continue
-
-                // تطبيق الفلتر الخاص باللاعب (Whitelist / Blacklist)
                 if (!isItemAllowed(item, s)) continue
 
                 if (item.hasPickUpDelay()) {

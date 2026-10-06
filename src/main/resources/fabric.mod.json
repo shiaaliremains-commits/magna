@@ -3,7 +3,7 @@
 	"id": "magna",
 	"version": "${version}",
 	"name": "magna",
-	"description": "This is an example description! Tell everyone what your mod is about!",
+	"description": "Smart item and XP magnet with aesthetic attraction physics and in-game item filter.",
 	"authors": [
 		"Me!"
 	],
@@ -24,6 +24,12 @@
 		"client": [
 			{
 				"value": "my.magna.client.MagnaClient",
+				"adapter": "kotlin"
+			}
+		],
+		"modmenu": [
+			{
+				"value": "my.magna.client.MagnaModMenu",
 				"adapter": "kotlin"
 			}
 		],
