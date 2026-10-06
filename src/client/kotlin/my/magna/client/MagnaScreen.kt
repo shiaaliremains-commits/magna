@@ -9,7 +9,7 @@ import net.minecraft.client.gui.components.Button
 import net.minecraft.client.gui.screens.Screen
 import net.minecraft.network.chat.Component
 
-class MagnaScreen : Screen(Component.literal("Magna")) {
+class MagnaScreen(private val parent: Screen? = null) : Screen(Component.literal("Magna")) {
     private lateinit var toggleBtn: Button
     private lateinit var rangeBtn: Button
     private lateinit var speedBtn: Button
@@ -39,6 +39,14 @@ class MagnaScreen : Screen(Component.literal("Magna")) {
         ClientSettings.save()
         MagnaClient.pushSettings()
         refresh()
+    }
+
+    override fun onClose() {
+        if (parent != null) {
+            minecraft?.setScreen(parent)
+        } else {
+            super.onClose()
+        }
     }
 
     override fun init() {
@@ -95,7 +103,6 @@ class MagnaScreen : Screen(Component.literal("Magna")) {
         addRenderableWidget(effectsBtn)
         y += 22
 
-        // زر فتح شاشة الفلتر والتخصيص الجديدة
         filterBtn = Button.builder(Component.empty()) { _ ->
             MagnaClient.openScreen(MagnaFilterScreen(this))
         }.bounds(left, y, w, 20).build()
