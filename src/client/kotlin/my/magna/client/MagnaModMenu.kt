@@ -6,6 +6,6 @@ import net.minecraft.client.gui.screens.Screen
 
 class MagnaModMenu : ModMenuApi {
     override fun getModConfigScreenFactory(): ConfigScreenFactory<Screen> {
-        return ConfigScreenFactory { parent: Screen -> MagnaScreen(parent) }
+        return ConfigScreenFactory { _ -> MagnaScreen() }
     }
 }

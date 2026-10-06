@@ -7,7 +7,5 @@ fun interface ConfigScreenFactory<T : Screen> {
 }
 
 interface ModMenuApi {
-    fun getModConfigScreenFactory(): ConfigScreenFactory<*> {
-        return ConfigScreenFactory { null }
-    }
+    fun getModConfigScreenFactory(): ConfigScreenFactory<*>
 }
