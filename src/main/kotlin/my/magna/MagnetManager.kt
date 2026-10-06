@@ -8,6 +8,7 @@ import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking
 import net.minecraft.ChatFormatting
 import net.minecraft.network.chat.Component
 import net.minecraft.server.MinecraftServer
+import net.minecraft.server.level.ServerLevel
 import net.minecraft.server.level.ServerPlayer
 import net.minecraft.sounds.SoundEvents
 import net.minecraft.sounds.SoundSource
@@ -59,8 +60,8 @@ object MagnetManager {
                     .withStyle(ChatFormatting.GRAY)
             )
         player.sendSystemMessage(msg, true)
-        val level = player.serverLevel()
-        level.playSound(
+        val level = player.level() as? ServerLevel
+        level?.playSound(
             null, player.blockPosition(), SoundEvents.AMETHYST_BLOCK_CHIME, SoundSource.PLAYERS,
             0.8f, if (s.enabled) 1.5f else 0.7f
         )
@@ -75,7 +76,7 @@ object MagnetManager {
     }
 
     private fun attract(player: ServerPlayer, s: Pull) {
-        val level = player.serverLevel()
+        val level = player.level() as? ServerLevel ?: return
         val range = s.range.toDouble()
         val target = player.eyePosition.subtract(0.0, 0.4, 0.0)
         val box = player.boundingBox.inflate(range)
@@ -83,20 +84,26 @@ object MagnetManager {
         val targets = Targets.entries[s.targets]
 
         if (targets != Targets.XP) {
-            val items = level.getEntitiesOfClass(ItemEntity::class.java, box) { it.isAlive }
+            val rawItems = level.getEntitiesOfClass(ItemEntity::class.java, box)
+            val items = ArrayList<ItemEntity>()
 
-            // 1. تصفير وقت المنع فوراً حتى ما ينتظر أي غرض دوره ويسحبون معاً
-            for (item in items) {
-                if (item.hasPickUpDelay()) {
-                    item.setPickUpDelay(0)
+            // تصفية وتصفير وقت المنع للبلوكات المكسورة
+            for (i in 0 until rawItems.size) {
+                val item = rawItems[i]
+                if (item.isAlive) {
+                    if (item.hasPickUpDelay()) {
+                        item.setPickUpDelay(0)
+                    }
+                    items.add(item)
                 }
             }
 
-            // 2. دمج كل الحبات المتشابهة المتبعثرة بالأرض في ستاك واحد عند أقرب نقطة للاعب
+            // دمج الحبات المتشابهة المتبعثرة في ستاك واحد
             mergeMatchingItems(player, items)
 
-            // 3. سحب كل الأغراض المتبقية معاً بنفس الوقت دفعة واحدة
-            for (item in items) {
+            // سحب الأغراض معاً
+            for (i in 0 until items.size) {
+                val item = items[i]
                 if (item.isAlive) {
                     pull(item, target, range, mult)
                 }
@@ -104,32 +111,34 @@ object MagnetManager {
         }
 
         if (targets != Targets.ITEMS) {
-            for (orb in level.getEntitiesOfClass(ExperienceOrb::class.java, box) { it.isAlive }) {
-                pull(orb, target, range, mult)
+            val orbs = level.getEntitiesOfClass(ExperienceOrb::class.java, box)
+            for (i in 0 until orbs.size) {
+                val orb = orbs[i]
+                if (orb.isAlive) {
+                    pull(orb, target, range, mult)
+                }
             }
         }
     }
 
-    // دمج فوري للأغراض المتطابقة المتبعثرة بالأرض (مثل الفحم أو الحديد المكسور)
-    private fun mergeMatchingItems(player: ServerPlayer, items: List<ItemEntity>) {
+    // دمج فوري للأغراض المتطابقة المتبعثرة بالأرض في ستاك واحد
+    private fun mergeMatchingItems(player: ServerPlayer, items: MutableList<ItemEntity>) {
         if (items.size < 2) return
-        // فرز الأغراض بحيث الأقرب للاعب هو اللي يجمع الحبات البعيدة فيه
-        val list = items.filter { it.isAlive }.sortedBy { it.distanceTo(player) }
+        items.sortBy { it.distanceTo(player) }
 
-        for (i in list.indices) {
-            val primary = list[i]
+        for (i in 0 until items.size) {
+            val primary = items[i]
             if (!primary.isAlive) continue
 
             val primaryStack = primary.item
             val max = primaryStack.maxStackSize
             if (primaryStack.count >= max) continue
 
-            for (j in (i + 1) until list.size) {
-                val other = list[j]
+            for (j in (i + 1) until items.size) {
+                val other = items[j]
                 if (!other.isAlive) continue
 
                 val otherStack = other.item
-                // إذا كان الغرضين من نفس النوع تماماً
                 if (ItemStack.isSameItemSameComponents(primaryStack, otherStack)) {
                     val space = max - primaryStack.count
                     if (space <= 0) break
@@ -138,7 +147,6 @@ object MagnetManager {
                     primaryStack.grow(take)
                     otherStack.shrink(take)
 
-                    // إذا فرغت الحبة المندمجة، نحذفها من العالم فوراً
                     if (otherStack.isEmpty) {
                         other.discard()
                     } else {
