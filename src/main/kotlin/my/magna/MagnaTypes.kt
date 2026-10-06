@@ -23,5 +23,5 @@ class MagnetSettings {
     var range: Int = 8
     var speed: Int = PullSpeed.NORMAL.ordinal
     var targets: Int = Targets.BOTH.ordinal
-    var effects: Boolean = true
+    var quality: Int = 2
 }

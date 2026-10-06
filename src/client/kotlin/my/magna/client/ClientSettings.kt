@@ -24,6 +24,7 @@ object ClientSettings {
         data.range = data.range.coerceIn(MagnaLimits.MIN_RANGE, MagnaLimits.MAX_RANGE)
         data.speed = data.speed.coerceIn(0, PullSpeed.entries.size - 1)
         data.targets = data.targets.coerceIn(0, Targets.entries.size - 1)
+        data.quality = data.quality.coerceIn(0, 2)
         save()
     }
 

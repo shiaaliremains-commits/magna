@@ -96,16 +96,8 @@ object MagnetManager {
         }
     }
 
-    /** slow when far, fast when close, with a little lift so things glide instead of scraping the ground */
     private fun pull(entity: Entity, target: Vec3, range: Double, mult: Double) {
-        val delta = target.subtract(entity.position())
-        val dist = delta.length()
-        if (dist > range || dist < 0.4) return
-
-        val dir = delta.scale(1.0 / dist)
-        val closeness = (1.0 - dist / range).coerceIn(0.0, 1.0)
-        val speed = (0.12 + 0.55 * closeness * closeness) * mult
-        val lift = if (dist > 1.5) 0.05 * (1.0 - closeness) else 0.0
-        entity.setDeltaMovement(Vec3(dir.x * speed, dir.y * speed + lift, dir.z * speed))
+        val v = MagnetMath.nextVelocity(entity.position(), entity.deltaMovement, target, range, mult) ?: return
+        entity.setDeltaMovement(v)
     }
 }

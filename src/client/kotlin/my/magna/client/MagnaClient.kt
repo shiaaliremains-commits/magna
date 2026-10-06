@@ -48,6 +48,7 @@ object MagnaClient : ClientModInitializer {
                 openScreen(MagnaScreen())
             }
 
+            MagnaPrediction.tick(client, player)
             MagnaVisuals.draw(client, player)
         }
     }

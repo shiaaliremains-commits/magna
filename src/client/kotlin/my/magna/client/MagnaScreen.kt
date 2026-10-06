@@ -17,20 +17,20 @@ class MagnaScreen : Screen(Component.literal("Magna")) {
     private lateinit var targetsBtn: Button
     private lateinit var effectsBtn: Button
 
+    private val qualityNames = listOf("Off", "Light", "Full")
+
     private val d: MagnetSettings get() = ClientSettings.data
 
     private fun onOff(on: Boolean): Component =
         if (on) Component.literal("ON").withStyle(ChatFormatting.GREEN, ChatFormatting.BOLD)
         else Component.literal("OFF").withStyle(ChatFormatting.RED, ChatFormatting.BOLD)
 
-    private fun labeled(name: String, value: Component): Component = Component.literal("$name: ").append(value)
-
     private fun refresh() {
-        toggleBtn.message = labeled("Magnet", onOff(d.enabled))
+        toggleBtn.message = Component.literal("Magnet: ").append(onOff(d.enabled))
         rangeBtn.message = Component.literal("Range: ${d.range} blocks")
         speedBtn.message = Component.literal("Pull speed: ${PullSpeed.entries[d.speed].label}")
         targetsBtn.message = Component.literal("Collect: ${Targets.entries[d.targets].label}")
-        effectsBtn.message = labeled("Visual effects", onOff(d.effects))
+        effectsBtn.message = Component.literal("Effects: ${qualityNames[d.quality]}")
     }
 
     private fun commit() {
@@ -87,7 +87,7 @@ class MagnaScreen : Screen(Component.literal("Magna")) {
         y += 24
 
         effectsBtn = Button.builder(Component.empty()) { _ ->
-            d.effects = !d.effects
+            d.quality = (d.quality + 1) % 3
             commit()
         }.bounds(left, y, w, 20).build()
         addRenderableWidget(effectsBtn)
