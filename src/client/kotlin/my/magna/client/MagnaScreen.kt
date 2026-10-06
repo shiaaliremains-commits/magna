@@ -9,16 +9,15 @@ import net.minecraft.client.gui.components.Button
 import net.minecraft.client.gui.screens.Screen
 import net.minecraft.network.chat.Component
 
-/** Settings screen: opens with the N key. Every change is saved and sent to the server right away. */
 class MagnaScreen : Screen(Component.literal("Magna")) {
     private lateinit var toggleBtn: Button
     private lateinit var rangeBtn: Button
     private lateinit var speedBtn: Button
     private lateinit var targetsBtn: Button
     private lateinit var effectsBtn: Button
+    private lateinit var filterBtn: Button
 
     private val qualityNames = listOf("Off", "Light", "Full")
-
     private val d: MagnetSettings get() = ClientSettings.data
 
     private fun onOff(on: Boolean): Component =
@@ -31,6 +30,9 @@ class MagnaScreen : Screen(Component.literal("Magna")) {
         speedBtn.message = Component.literal("Pull speed: ${PullSpeed.entries[d.speed].label}")
         targetsBtn.message = Component.literal("Collect: ${Targets.entries[d.targets].label}")
         effectsBtn.message = Component.literal("Effects: ${qualityNames[d.quality]}")
+        
+        val mode = if (d.filterWhitelist) "Whitelist" else "Blacklist"
+        filterBtn.message = Component.literal("Item Filter: $mode (${d.filterItems.size})").withStyle(ChatFormatting.GOLD)
     }
 
     private fun commit() {
@@ -42,21 +44,21 @@ class MagnaScreen : Screen(Component.literal("Magna")) {
     override fun init() {
         val w = 220
         val left = width / 2 - w / 2
-        var y = maxOf(6, height / 2 - 84)
+        var y = maxOf(6, height / 2 - 96)
 
         val header = Button.builder(
             Component.literal("Magna  \u2022  Item Magnet").withStyle(ChatFormatting.GOLD, ChatFormatting.BOLD)
         ) { _ -> }.bounds(left, y, w, 20).build()
         header.active = false
         addRenderableWidget(header)
-        y += 28
+        y += 24
 
         toggleBtn = Button.builder(Component.empty()) { _ ->
             d.enabled = !d.enabled
             commit()
         }.bounds(left, y, w, 20).build()
         addRenderableWidget(toggleBtn)
-        y += 24
+        y += 22
 
         val minus = Button.builder(Component.literal("-")) { _ ->
             d.range = (d.range - 1).coerceAtLeast(MagnaLimits.MIN_RANGE)
@@ -70,28 +72,35 @@ class MagnaScreen : Screen(Component.literal("Magna")) {
         addRenderableWidget(minus)
         addRenderableWidget(rangeBtn)
         addRenderableWidget(plus)
-        y += 24
+        y += 22
 
         speedBtn = Button.builder(Component.empty()) { _ ->
             d.speed = (d.speed + 1) % PullSpeed.entries.size
             commit()
         }.bounds(left, y, w, 20).build()
         addRenderableWidget(speedBtn)
-        y += 24
+        y += 22
 
         targetsBtn = Button.builder(Component.empty()) { _ ->
             d.targets = (d.targets + 1) % Targets.entries.size
             commit()
         }.bounds(left, y, w, 20).build()
         addRenderableWidget(targetsBtn)
-        y += 24
+        y += 22
 
         effectsBtn = Button.builder(Component.empty()) { _ ->
             d.quality = (d.quality + 1) % 3
             commit()
         }.bounds(left, y, w, 20).build()
         addRenderableWidget(effectsBtn)
-        y += 30
+        y += 22
+
+        // زر فتح شاشة الفلتر والتخصيص الجديدة
+        filterBtn = Button.builder(Component.empty()) { _ ->
+            MagnaClient.openScreen(MagnaFilterScreen(this))
+        }.bounds(left, y, w, 20).build()
+        addRenderableWidget(filterBtn)
+        y += 26
 
         addRenderableWidget(
             Button.builder(Component.literal("Done")) { _ -> onClose() }.bounds(left, y, w, 20).build()

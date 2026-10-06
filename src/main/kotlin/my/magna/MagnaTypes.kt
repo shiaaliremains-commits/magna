@@ -17,11 +17,14 @@ object MagnaLimits {
     const val MAX_RANGE = 16
 }
 
-/** the player's settings (saved on the client, the server only needs the first four) */
 class MagnetSettings {
     var enabled: Boolean = true
     var range: Int = 8
     var speed: Int = PullSpeed.NORMAL.ordinal
     var targets: Int = Targets.BOTH.ordinal
     var quality: Int = 2
+
+    // إعدادات الفلتر
+    var filterWhitelist: Boolean = true
+    var filterItems: MutableSet<String> = HashSet()
 }

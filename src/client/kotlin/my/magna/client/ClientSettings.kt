@@ -7,7 +7,6 @@ import my.magna.PullSpeed
 import my.magna.Targets
 import net.fabricmc.loader.api.FabricLoader
 
-/** Loads and saves the settings in config/magna.json */
 object ClientSettings {
     private val gson = GsonBuilder().setPrettyPrinting().create()
     var data = MagnetSettings()
@@ -34,7 +33,7 @@ object ClientSettings {
             f.parentFile.mkdirs()
             f.writeText(gson.toJson(data))
         } catch (e: Exception) {
-            // ignore: settings just will not be remembered
+            // ignore
         }
     }
 }

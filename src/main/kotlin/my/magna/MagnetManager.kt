@@ -6,6 +6,7 @@ import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking
 import net.minecraft.ChatFormatting
+import net.minecraft.core.registries.BuiltInRegistries
 import net.minecraft.network.chat.Component
 import net.minecraft.server.MinecraftServer
 import net.minecraft.server.level.ServerLevel
@@ -18,13 +19,14 @@ import net.minecraft.world.entity.item.ItemEntity
 import net.minecraft.world.item.ItemStack
 import net.minecraft.world.phys.Vec3
 
-/** Server side: pulls items and XP orbs towards players who turned the magnet on. */
 object MagnetManager {
     private class Pull {
         var enabled = false
         var range = 8
         var speed = PullSpeed.NORMAL.ordinal
         var targets = Targets.BOTH.ordinal
+        var whitelist = true
+        var filter = HashSet<String>()
         var synced = false
     }
 
@@ -46,6 +48,9 @@ object MagnetManager {
         s.range = p.range.coerceIn(MagnaLimits.MIN_RANGE, MagnaLimits.MAX_RANGE)
         s.speed = p.speed.coerceIn(0, PullSpeed.entries.size - 1)
         s.targets = p.targets.coerceIn(0, Targets.entries.size - 1)
+        s.whitelist = p.whitelist
+        s.filter = p.filter.toHashSet()
+
         if (s.synced && was != s.enabled) announce(player, s)
         s.synced = true
     }
@@ -75,6 +80,16 @@ object MagnetManager {
         }
     }
 
+    // فحص ما إذا كان البلوك مسموح بسحبه حسب فلتر اللاعب
+    private fun isItemAllowed(item: ItemEntity, s: Pull): Boolean {
+        if (s.filter.isEmpty()) {
+            return !s.whitelist // إذا القائمة فارغة والوضع Whitelist لا يسحب شيء، وإذا Blacklist يسحب كل شيء
+        }
+        val id = BuiltInRegistries.ITEM.getKey(item.item.item).toString()
+        val contains = s.filter.contains(id)
+        return if (s.whitelist) contains else !contains
+    }
+
     private fun attract(player: ServerPlayer, s: Pull) {
         val level = player.level() as? ServerLevel ?: return
         val range = s.range.toDouble()
@@ -91,22 +106,20 @@ object MagnetManager {
                 val item = rawItems[i]
                 if (!item.isAlive) continue
 
-                // حماية رمي الأغراض: إذا رماه اللاعب بنفسه (بزر Q أو الحقيبة)، اتركه يسقط طبيعي بالأرض وما تسحبه
-                if (item.hasPickUpDelay() && item.owner == player) {
-                    continue
-                }
+                // استثناء ما رماه اللاعب بيده
+                if (item.hasPickUpDelay() && item.owner == player) continue
 
-                // البلوكات المكسورة بالتعدين: صفّر وقتها فوراً لتسحب بنفس اللحظة
+                // تطبيق الفلتر الخاص باللاعب (Whitelist / Blacklist)
+                if (!isItemAllowed(item, s)) continue
+
                 if (item.hasPickUpDelay()) {
                     item.setPickUpDelay(0)
                 }
                 items.add(item)
             }
 
-            // دمج الحبات المتشابهة المتبعثرة في ستاك واحد
             mergeMatchingItems(player, items)
 
-            // سحب الأغراض معاً
             for (i in 0 until items.size) {
                 val item = items[i]
                 if (item.isAlive) {
@@ -126,7 +139,6 @@ object MagnetManager {
         }
     }
 
-    // دمج فوري للأغراض المتطابقة المتبعثرة بالأرض في ستاك واحد
     private fun mergeMatchingItems(player: ServerPlayer, items: MutableList<ItemEntity>) {
         if (items.size < 2) return
         items.sortBy { it.distanceTo(player) }

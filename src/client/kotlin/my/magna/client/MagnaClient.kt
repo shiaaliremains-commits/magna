@@ -53,13 +53,22 @@ object MagnaClient : ClientModInitializer {
         }
     }
 
-    /** sends the settings to the server so it knows how to pull */
     fun pushSettings() {
         val d = ClientSettings.data
-        runCatching { ClientPlayNetworking.send(SettingsPayload(d.enabled, d.range, d.speed, d.targets)) }
+        runCatching {
+            ClientPlayNetworking.send(
+                SettingsPayload(
+                    d.enabled,
+                    d.range,
+                    d.speed,
+                    d.targets,
+                    d.filterWhitelist,
+                    d.filterItems.toList()
+                )
+            )
+        }
     }
 
-    /** the screen-opening method moved between versions (Minecraft.setScreen or gui.setScreen), so find it by name */
     fun openScreen(screen: Screen?) {
         val mc = Minecraft.getInstance()
         val gui = runCatching { mc.javaClass.getField("gui").get(mc) }.getOrNull()
