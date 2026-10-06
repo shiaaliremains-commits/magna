@@ -8,6 +8,7 @@ import net.minecraft.client.gui.screens.Screen
 import net.minecraft.core.registries.BuiltInRegistries
 import net.minecraft.network.chat.Component
 import net.minecraft.world.item.Item
+import net.minecraft.world.item.ItemStack
 import net.minecraft.world.item.Items
 
 class MagnaFilterScreen(private val parent: Screen) : Screen(Component.literal("Item Filter")) {
@@ -27,6 +28,10 @@ class MagnaFilterScreen(private val parent: Screen) : Screen(Component.literal("
     private val pageSize = 10
     private val itemButtons = ArrayList<Button>()
 
+    private fun getItemName(item: Item): String {
+        return runCatching { ItemStack(item).hoverName.string }.getOrDefault(BuiltInRegistries.ITEM.getKey(item).path)
+    }
+
     private fun updateFilter() {
         val query = searchBox.value.trim().lowercase()
         filteredItems = if (query.isEmpty()) {
@@ -34,7 +39,7 @@ class MagnaFilterScreen(private val parent: Screen) : Screen(Component.literal("
         } else {
             allItems.filter { item ->
                 val id = BuiltInRegistries.ITEM.getKey(item).toString().lowercase()
-                val name = item.description.string.lowercase()
+                val name = getItemName(item).lowercase()
                 query in id || query in name
             }
         }
@@ -59,8 +64,8 @@ class MagnaFilterScreen(private val parent: Screen) : Screen(Component.literal("
                 val prefix = if (checked) Component.literal("[✔] ").withStyle(ChatFormatting.GREEN, ChatFormatting.BOLD)
                 else Component.literal("[  ] ").withStyle(ChatFormatting.DARK_GRAY)
 
-                val name = item.description.copy().withStyle(if (checked) ChatFormatting.WHITE else ChatFormatting.GRAY)
-                btn.message = Component.empty().append(prefix).append(name)
+                val itemName = Component.translatable(item.descriptionId).withStyle(if (checked) ChatFormatting.WHITE else ChatFormatting.GRAY)
+                btn.message = Component.empty().append(prefix).append(itemName)
                 btn.visible = true
             } else {
                 btn.visible = false
